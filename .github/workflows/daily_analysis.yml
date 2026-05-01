@@ -395,3 +395,22 @@ jobs:
             echo "📜 最近日志（最后 30 行）:"
             tail -30 logs/stock_analysis_*.log 2>/dev/null || echo "无日志"
           fi
+      - name: 推送复盘报告到微信
+        if: always()
+        env:
+          PUSH_KEY: ${{ secrets.PUSH_KEY }}
+        run: |
+           # 获取 reports 目录下最新修改的 .md 文件路径
+           LATEST_FILE=$(ls -t reports/*.md 2>/dev/null | head -n 1)
+           
+           if [ -n "$LATEST_FILE" ]; then
+             # 提取前 100 行内容
+             REPORT_CONTENT=$(cat "$LATEST_FILE" | head -n 100)
+             
+             # 使用 curl 发送给 Server 酱
+             curl -X POST "https://sctapi.ftqq.com/${PUSH_KEY}.send" \
+               -d "title=今日大盘复盘报告" \
+               -d "desp=${REPORT_CONTENT}"
+           else
+             echo "没有找到报告文件"
+           fi
